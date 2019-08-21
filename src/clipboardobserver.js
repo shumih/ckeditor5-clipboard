@@ -31,72 +31,123 @@ import DataTransfer from './datatransfer';
  * @extends module:engine/view/observer/domeventobserver~DomEventObserver
  */
 export default class ClipboardObserver extends DomEventObserver {
-	constructor( view ) {
-		super( view );
+  constructor(view) {
+    super(view);
 
-		const viewDocument = this.document;
+    const viewDocument = this.document;
+    let targetRanges;
 
-		this.domEventType = [ 'paste', 'copy', 'cut', 'drop', 'dragover' ];
+    this.domEventType = ['paste', 'copy', 'cut', 'drop', 'dragover'];
 
-		this.listenTo( viewDocument, 'paste', handleInput, { priority: 'low' } );
-		this.listenTo( viewDocument, 'drop', handleInput, { priority: 'low' } );
+    // IE11
+    if ('clipboardData' in window) {
+      var hiddenEditable = document.createElement('div');
+      hiddenEditable.setAttribute('contenteditable', true);
+      hiddenEditable.setAttribute('class', 'hidden');
+      document.body.appendChild(hiddenEditable);
 
-		function handleInput( evt, data ) {
-			data.preventDefault();
+      const beforePastHandler = () => {
+        if (!targetRanges) {
+          targetRanges = Array.from(viewDocument.selection.getRanges());
+          hiddenEditable.focus();
+        }
+      };
 
-			const targetRanges = data.dropRange ? [ data.dropRange ] : Array.from( viewDocument.selection.getRanges() );
+      const pasteHandler = () => {
+        setTimeout(() => {
+          const html = hiddenEditable.innerHTML;
+          const dataTransfer = {
+            getData: function() {
+              return html;
+            },
+          };
 
-			const eventInfo = new EventInfo( viewDocument, 'clipboardInput' );
+          view.domRoots.get('main').focus();
+          const eventInfo = new EventInfo(viewDocument, 'clipboardInput');
 
-			viewDocument.fire( eventInfo, {
-				dataTransfer: data.dataTransfer,
-				targetRanges
-			} );
+          viewDocument.fire(eventInfo, {
+            dataTransfer: dataTransfer,
+            targetRanges: targetRanges,
+          });
 
-			// If CKEditor handled the input, do not bubble the original event any further.
-			// This helps external integrations recognize that fact and act accordingly.
-			// https://github.com/ckeditor/ckeditor5-upload/issues/92
-			if ( eventInfo.stop.called ) {
-				data.stopPropagation();
-			}
-		}
-	}
+          targetRanges = null;
+          hiddenEditable.innerHTML = '';
+        }, 0);
+      };
 
-	onDomEvent( domEvent ) {
-		const evtData = {
-			dataTransfer: new DataTransfer( domEvent.clipboardData ? domEvent.clipboardData : domEvent.dataTransfer )
-		};
+      document.addEventListener('beforepaste', beforePastHandler, true);
 
-		if ( domEvent.type == 'drop' ) {
-			evtData.dropRange = getDropViewRange( this.view, domEvent );
-		}
+      hiddenEditable.addEventListener('paste', pasteHandler, true);
+    }
 
-		this.fire( domEvent.type, domEvent, evtData );
-	}
+    this.listenTo(viewDocument, 'paste', handleInput, { priority: 'low' });
+    this.listenTo(viewDocument, 'drop', handleInput, { priority: 'low' });
+
+    function handleInput(evt, data) {
+      data.preventDefault();
+
+      const targetRanges = data.dropRange
+        ? [data.dropRange]
+        : Array.from(viewDocument.selection.getRanges());
+
+      const eventInfo = new EventInfo(viewDocument, 'clipboardInput');
+
+      // IE
+      if (data.dataTransfer == null && window.clipboardData != null) {
+        return;
+      }
+
+      viewDocument.fire(eventInfo, {
+        dataTransfer: data.dataTransfer,
+        targetRanges,
+      });
+
+      // If CKEditor handled the input, do not bubble the original event any further.
+      // This helps external integrations recognize that fact and act accordingly.
+      // https://github.com/ckeditor/ckeditor5-upload/issues/92
+      if (eventInfo.stop.called) {
+        data.stopPropagation();
+      }
+    }
+  }
+
+  onDomEvent(domEvent) {
+    const evtData = {
+      dataTransfer: new DataTransfer(
+        domEvent.clipboardData ? domEvent.clipboardData : domEvent.dataTransfer
+      ),
+    };
+
+    if (domEvent.type == 'drop') {
+      evtData.dropRange = getDropViewRange(this.view, domEvent);
+    }
+
+    this.fire(domEvent.type, domEvent, evtData);
+  }
 }
 
-function getDropViewRange( view, domEvent ) {
-	const domDoc = domEvent.target.ownerDocument;
-	const x = domEvent.clientX;
-	const y = domEvent.clientY;
-	let domRange;
+function getDropViewRange(view, domEvent) {
+  const domDoc = domEvent.target.ownerDocument;
+  const x = domEvent.clientX;
+  const y = domEvent.clientY;
+  let domRange;
 
-	// Webkit & Blink.
-	if ( domDoc.caretRangeFromPoint && domDoc.caretRangeFromPoint( x, y ) ) {
-		domRange = domDoc.caretRangeFromPoint( x, y );
-	}
-	// FF.
-	else if ( domEvent.rangeParent ) {
-		domRange = domDoc.createRange();
-		domRange.setStart( domEvent.rangeParent, domEvent.rangeOffset );
-		domRange.collapse( true );
-	}
+  // Webkit & Blink.
+  if (domDoc.caretRangeFromPoint && domDoc.caretRangeFromPoint(x, y)) {
+    domRange = domDoc.caretRangeFromPoint(x, y);
+  }
+  // FF.
+  else if (domEvent.rangeParent) {
+    domRange = domDoc.createRange();
+    domRange.setStart(domEvent.rangeParent, domEvent.rangeOffset);
+    domRange.collapse(true);
+  }
 
-	if ( domRange ) {
-		return view.domConverter.domRangeToView( domRange );
-	} else {
-		return view.document.selection.getFirstRange();
-	}
+  if (domRange) {
+    return view.domConverter.domRangeToView(domRange);
+  } else {
+    return view.document.selection.getFirstRange();
+  }
 }
 
 /**
