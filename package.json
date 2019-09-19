@@ -10,9 +10,9 @@
     "ckeditor5-plugin"
   ],
   "dependencies": {
+    "@ckeditor/ckeditor5-core": "12.1.0",
     "@ckeditor/ckeditor5-engine": "git+https://github.com/ckeditor/ckeditor5-engine.git#ie11",
-    "@ckeditor/ckeditor5-utils": "git+https://github.com/ckeditor/ckeditor5-utils.git#ie11",
-    "@ckeditor/ckeditor5-core": "12.1.0"
+    "@ckeditor/ckeditor5-utils": "git+https://github.com/ckeditor/ckeditor5-utils.git#ie11"
   },
   "engines": {
     "node": ">=8.0.0",

@@ -114,7 +114,7 @@ export default class ClipboardObserver extends DomEventObserver {
   onDomEvent(domEvent) {
     const evtData = {
       dataTransfer: new DataTransfer(
-        domEvent.clipboardData ? domEvent.clipboardData : domEvent.dataTransfer
+        domEvent.clipboardData ? domEvent.clipboardData : domEvent.dataTransfer || window.clipboardData
       ),
     };
 
