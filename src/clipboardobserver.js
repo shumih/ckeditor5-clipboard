@@ -10,7 +10,6 @@
 import DomEventObserver from '@ckeditor/ckeditor5-engine/src/view/observer/domeventobserver';
 import EventInfo from '@ckeditor/ckeditor5-utils/src/eventinfo';
 import DataTransfer from './datatransfer';
-import MutationObserver from 'mutation-observer';
 
 /**
  * Clipboard events observer.
