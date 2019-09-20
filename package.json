@@ -10,6 +10,7 @@
     "ckeditor5-plugin"
   ],
   "dependencies": {
+    "mutation-observer": "^1.0.3",
     "@ckeditor/ckeditor5-core": "12.1.0",
     "@ckeditor/ckeditor5-engine": "git+https://github.com/ckeditor/ckeditor5-engine.git#ie11",
     "@ckeditor/ckeditor5-utils": "git+https://github.com/ckeditor/ckeditor5-utils.git#ie11"

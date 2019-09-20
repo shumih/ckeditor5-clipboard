@@ -10,6 +10,7 @@
 import DomEventObserver from '@ckeditor/ckeditor5-engine/src/view/observer/domeventobserver';
 import EventInfo from '@ckeditor/ckeditor5-utils/src/eventinfo';
 import DataTransfer from './datatransfer';
+import MutationObserver from 'mutation-observer';
 
 /**
  * Clipboard events observer.
@@ -35,52 +36,80 @@ export default class ClipboardObserver extends DomEventObserver {
     super(view);
 
     const viewDocument = this.document;
-    let targetRanges;
 
     this.domEventType = ['paste', 'copy', 'cut', 'drop', 'dragover'];
 
     // IE11
     if ('clipboardData' in window) {
-      var hiddenEditable = document.createElement('div');
+      let targetRanges;
+      const hiddenEditable = document.createElement('div');
+      const observer = new MutationObserver(mutations => {
+        debugger;
+      });
+      observer.observe(hiddenEditable, ['childList']);
       hiddenEditable.setAttribute('contenteditable', true);
       hiddenEditable.setAttribute('class', 'hidden');
       document.body.appendChild(hiddenEditable);
 
-      const beforePastHandler = () => {
-        if (!targetRanges) {
-          targetRanges = Array.from(viewDocument.selection.getRanges());
+      console.log('addListeners');
+
+      document.addEventListener(
+        'beforepaste',
+        () => {
+          console.log('beforepaste');
+          if (!targetRanges) {
+            targetRanges = Array.from(this.document.selection.getRanges());
+          }
+
           hiddenEditable.focus();
+        },
+        true
+      );
+
+      this.listenTo(
+        viewDocument,
+        'paste',
+        (evt, data) => {
+          // data.preventDefault();
+          console.log('paste');
+        },
+        { priority: 'low' }
+      );
+
+      hiddenEditable.addEventListener(
+        'paste',
+        () => {
+          setTimeout(handleIEInput, 0);
+        },
+        {
+          priority: 'low',
         }
-      };
+      );
 
-      const pasteHandler = () => {
-        setTimeout(() => {
-          const html = hiddenEditable.innerHTML;
-          const dataTransfer = {
-            getData: function() {
-              return html;
-            },
-          };
+      function handleIEInput(evt, data) {
+        console.log('pasteIE11');
+        const dataTransfer = {
+          getData: function() {
+            return hiddenEditable.innerHTML;
+          },
+          types: ['Text'],
+          files: [],
+        };
 
-          view.domRoots.get('main').focus();
-          const eventInfo = new EventInfo(viewDocument, 'clipboardInput');
+        view.domRoots.get('main').focus();
+        const eventInfo = new EventInfo(viewDocument, 'clipboardInput');
 
-          viewDocument.fire(eventInfo, {
-            dataTransfer: dataTransfer,
-            targetRanges: targetRanges,
-          });
+        viewDocument.fire(eventInfo, {
+          dataTransfer: dataTransfer,
+          targetRanges: targetRanges,
+        });
 
-          targetRanges = null;
-          hiddenEditable.innerHTML = '';
-        }, 0);
-      };
-
-      document.addEventListener('beforepaste', beforePastHandler, true);
-
-      hiddenEditable.addEventListener('paste', pasteHandler, true);
+        targetRanges = null;
+        hiddenEditable.innerHTML = '';
+      }
+    } else {
+      this.listenTo(viewDocument, 'paste', handleInput, { priority: 'low' });
     }
-
-    this.listenTo(viewDocument, 'paste', handleInput, { priority: 'low' });
     this.listenTo(viewDocument, 'drop', handleInput, { priority: 'low' });
 
     function handleInput(evt, data) {
@@ -92,7 +121,6 @@ export default class ClipboardObserver extends DomEventObserver {
 
       const eventInfo = new EventInfo(viewDocument, 'clipboardInput');
 
-      // IE
       if (data.dataTransfer == null && window.clipboardData != null) {
         return;
       }
@@ -114,7 +142,7 @@ export default class ClipboardObserver extends DomEventObserver {
   onDomEvent(domEvent) {
     const evtData = {
       dataTransfer: new DataTransfer(
-        domEvent.clipboardData ? domEvent.clipboardData : domEvent.dataTransfer || window.clipboardData
+        domEvent.clipboardData || domEvent.dataTransfer || window.clipboardData
       ),
     };
 

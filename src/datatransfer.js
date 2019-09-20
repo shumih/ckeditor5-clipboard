@@ -35,7 +35,7 @@ export default class DataTransfer {
    * @returns {Array.<String>}
    */
   get types() {
-    return this._native.types;
+    return this._native.types || ['Text'];
   }
 
   /**
@@ -48,7 +48,7 @@ export default class DataTransfer {
    */
   getData(type) {
     try {
-      this._native.getData(type);
+      return this._native.getData(type);
     } catch (e) {
       return '';
     }

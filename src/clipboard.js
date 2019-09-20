@@ -124,7 +124,11 @@ export default class Clipboard extends Plugin {
 
       const content = editor.data.toView(editor.model.getSelectedContent(modelDocument.selection));
 
-      viewDocument.fire('clipboardOutput', { dataTransfer, content, method: evt.name });
+      viewDocument.fire('clipboardOutput', {
+        dataTransfer,
+        content,
+        method: evt.name,
+      });
     }
 
     this.listenTo(viewDocument, 'copy', onCopyCut, { priority: 'low' });
