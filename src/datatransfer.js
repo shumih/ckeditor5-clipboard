@@ -35,7 +35,7 @@ export default class DataTransfer {
    * @returns {Array.<String>}
    */
   get types() {
-    return this._native.types || ['Text'];
+    return this._native.types || ["Text"];
   }
 
   /**
@@ -50,7 +50,7 @@ export default class DataTransfer {
     try {
       return this._native.getData(type);
     } catch (e) {
-      return '';
+      return type === "text/plain" ? this._native.getData("Text") : "";
     }
   }
 
@@ -67,12 +67,18 @@ export default class DataTransfer {
 
 function getFiles(nativeDataTransfer) {
   // DataTransfer.files and items are Array-like and might not have an iterable interface.
-  const files = nativeDataTransfer.files ? Array.from(nativeDataTransfer.files) : [];
-  const items = nativeDataTransfer.items ? Array.from(nativeDataTransfer.items) : [];
+  const files = nativeDataTransfer.files
+    ? Array.from(nativeDataTransfer.files)
+    : [];
+  const items = nativeDataTransfer.items
+    ? Array.from(nativeDataTransfer.items)
+    : [];
 
   if (files.length) {
     return files;
   }
   // Chrome have empty DataTransfer.files, but let get files through the items interface.
-  return items.filter(item => item.kind === 'file').map(item => item.getAsFile());
+  return items
+    .filter(item => item.kind === "file")
+    .map(item => item.getAsFile());
 }

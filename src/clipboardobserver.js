@@ -7,9 +7,9 @@
  * @module clipboard/clipboardobserver
  */
 
-import DomEventObserver from '@ckeditor/ckeditor5-engine/src/view/observer/domeventobserver';
-import EventInfo from '@ckeditor/ckeditor5-utils/src/eventinfo';
-import DataTransfer from './datatransfer';
+import DomEventObserver from "@ckeditor/ckeditor5-engine/src/view/observer/domeventobserver";
+import EventInfo from "@ckeditor/ckeditor5-utils/src/eventinfo";
+import DataTransfer from "./datatransfer";
 
 /**
  * Clipboard events observer.
@@ -36,80 +36,10 @@ export default class ClipboardObserver extends DomEventObserver {
 
     const viewDocument = this.document;
 
-    this.domEventType = ['paste', 'copy', 'cut', 'drop', 'dragover'];
+    this.domEventType = ["paste", "copy", "cut", "drop", "dragover"];
 
-    // IE11
-    if ('clipboardData' in window) {
-      let targetRanges;
-      const hiddenEditable = document.createElement('div');
-      const observer = new MutationObserver(mutations => {
-        debugger;
-      });
-      observer.observe(hiddenEditable, ['childList']);
-      hiddenEditable.setAttribute('contenteditable', true);
-      hiddenEditable.setAttribute('class', 'hidden');
-      document.body.appendChild(hiddenEditable);
-
-      console.log('addListeners');
-
-      document.addEventListener(
-        'beforepaste',
-        () => {
-          console.log('beforepaste');
-          if (!targetRanges) {
-            targetRanges = Array.from(this.document.selection.getRanges());
-          }
-
-          hiddenEditable.focus();
-        },
-        true
-      );
-
-      this.listenTo(
-        viewDocument,
-        'paste',
-        (evt, data) => {
-          // data.preventDefault();
-          console.log('paste');
-        },
-        { priority: 'low' }
-      );
-
-      hiddenEditable.addEventListener(
-        'paste',
-        () => {
-          setTimeout(handleIEInput, 0);
-        },
-        {
-          priority: 'low',
-        }
-      );
-
-      function handleIEInput(evt, data) {
-        console.log('pasteIE11');
-        const dataTransfer = {
-          getData: function() {
-            return hiddenEditable.innerHTML;
-          },
-          types: ['Text'],
-          files: [],
-        };
-
-        view.domRoots.get('main').focus();
-        const eventInfo = new EventInfo(viewDocument, 'clipboardInput');
-
-        viewDocument.fire(eventInfo, {
-          dataTransfer: dataTransfer,
-          targetRanges: targetRanges,
-        });
-
-        targetRanges = null;
-        hiddenEditable.innerHTML = '';
-      }
-    } else {
-      this.listenTo(viewDocument, 'paste', handleInput, { priority: 'low' });
-    }
-    this.listenTo(viewDocument, 'drop', handleInput, { priority: 'low' });
+    this.listenTo(viewDocument, "paste", handleInput, { priority: "low" });
+    this.listenTo(viewDocument, "drop", handleInput, { priority: "low" });
 
     function handleInput(evt, data) {
       data.preventDefault();
@@ -118,15 +48,11 @@ export default class ClipboardObserver extends DomEventObserver {
         ? [data.dropRange]
         : Array.from(viewDocument.selection.getRanges());
 
-      const eventInfo = new EventInfo(viewDocument, 'clipboardInput');
-
-      if (data.dataTransfer == null && window.clipboardData != null) {
-        return;
-      }
+      const eventInfo = new EventInfo(viewDocument, "clipboardInput");
 
       viewDocument.fire(eventInfo, {
         dataTransfer: data.dataTransfer,
-        targetRanges,
+        targetRanges
       });
 
       // If CKEditor handled the input, do not bubble the original event any further.
@@ -142,10 +68,10 @@ export default class ClipboardObserver extends DomEventObserver {
     const evtData = {
       dataTransfer: new DataTransfer(
         domEvent.clipboardData || domEvent.dataTransfer || window.clipboardData
-      ),
+      )
     };
 
-    if (domEvent.type == 'drop') {
+    if (domEvent.type == "drop") {
       evtData.dropRange = getDropViewRange(this.view, domEvent);
     }
 

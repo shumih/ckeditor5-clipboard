@@ -7,15 +7,15 @@
  * @module clipboard/clipboard
  */
 
-import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
+import Plugin from "@ckeditor/ckeditor5-core/src/plugin";
 
-import ClipboardObserver from './clipboardobserver';
+import ClipboardObserver from "./clipboardobserver";
 
-import plainTextToHtml from './utils/plaintexttohtml';
-import normalizeClipboardHtml from './utils/normalizeclipboarddata';
-import viewToPlainText from './utils/viewtoplaintext.js';
+import plainTextToHtml from "./utils/plaintexttohtml";
+import normalizeClipboardHtml from "./utils/normalizeclipboarddata";
+import viewToPlainText from "./utils/viewtoplaintext.js";
 
-import HtmlDataProcessor from '@ckeditor/ckeditor5-engine/src/dataprocessor/htmldataprocessor';
+import HtmlDataProcessor from "@ckeditor/ckeditor5-engine/src/dataprocessor/htmldataprocessor";
 
 /**
  * The clipboard feature. It is responsible for intercepting the `paste` and `drop` events and
@@ -31,7 +31,7 @@ export default class Clipboard extends Plugin {
    * @inheritDoc
    */
   static get pluginName() {
-    return 'Clipboard';
+    return "Clipboard";
   }
 
   /**
@@ -59,42 +59,40 @@ export default class Clipboard extends Plugin {
     // See: https://github.com/ckeditor/ckeditor5-clipboard/issues/26.
     this.listenTo(
       viewDocument,
-      'clipboardInput',
+      "clipboardInput",
       evt => {
         if (editor.isReadOnly) {
           evt.stop();
         }
       },
-      { priority: 'highest' }
+      { priority: "highest" }
     );
 
     this.listenTo(
       viewDocument,
-      'clipboardInput',
+      "clipboardInput",
       (evt, data) => {
         const dataTransfer = data.dataTransfer;
-        let content = '';
+        let content = "";
 
-        if (dataTransfer.getData('text/html')) {
-          content = normalizeClipboardHtml(dataTransfer.getData('text/html'));
-        } else if (dataTransfer.getData('text/plain')) {
-          content = plainTextToHtml(dataTransfer.getData('text/plain'));
-        } else {
-          content = plainTextToHtml(dataTransfer.getData('Text'));
+        if (dataTransfer.getData("text/html")) {
+          content = normalizeClipboardHtml(dataTransfer.getData("text/html"));
+        } else if (dataTransfer.getData("text/plain")) {
+          content = plainTextToHtml(dataTransfer.getData("text/plain"));
         }
 
         content = this._htmlDataProcessor.toView(content);
 
-        this.fire('inputTransformation', { content, dataTransfer });
+        this.fire("inputTransformation", { content, dataTransfer });
 
         view.scrollToTheSelection();
       },
-      { priority: 'low' }
+      { priority: "low" }
     );
 
     this.listenTo(
       this,
-      'inputTransformation',
+      "inputTransformation",
       (evt, data) => {
         if (!data.content.isEmpty) {
           const dataController = this.editor.data;
@@ -103,7 +101,10 @@ export default class Clipboard extends Plugin {
           // Convert the pasted content to a model document fragment.
           // Conversion is contextual, but in this case we need an "all allowed" context and for that
           // we use the $clipboardHolder item.
-          const modelFragment = dataController.toModel(data.content, '$clipboardHolder');
+          const modelFragment = dataController.toModel(
+            data.content,
+            "$clipboardHolder"
+          );
 
           if (modelFragment.childCount == 0) {
             return;
@@ -112,7 +113,7 @@ export default class Clipboard extends Plugin {
           model.insertContent(modelFragment);
         }
       },
-      { priority: 'low' }
+      { priority: "low" }
     );
 
     // The clipboard copy/cut pipeline.
@@ -122,19 +123,21 @@ export default class Clipboard extends Plugin {
 
       data.preventDefault();
 
-      const content = editor.data.toView(editor.model.getSelectedContent(modelDocument.selection));
+      const content = editor.data.toView(
+        editor.model.getSelectedContent(modelDocument.selection)
+      );
 
-      viewDocument.fire('clipboardOutput', {
+      viewDocument.fire("clipboardOutput", {
         dataTransfer,
         content,
-        method: evt.name,
+        method: evt.name
       });
     }
 
-    this.listenTo(viewDocument, 'copy', onCopyCut, { priority: 'low' });
+    this.listenTo(viewDocument, "copy", onCopyCut, { priority: "low" });
     this.listenTo(
       viewDocument,
-      'cut',
+      "cut",
       (evt, data) => {
         // Cutting is disabled when editor is read-only.
         // See: https://github.com/ckeditor/ckeditor5-clipboard/issues/26.
@@ -144,23 +147,29 @@ export default class Clipboard extends Plugin {
           onCopyCut(evt, data);
         }
       },
-      { priority: 'low' }
+      { priority: "low" }
     );
 
     this.listenTo(
       viewDocument,
-      'clipboardOutput',
+      "clipboardOutput",
       (evt, data) => {
         if (!data.content.isEmpty) {
-          data.dataTransfer.setData('text/html', this._htmlDataProcessor.toData(data.content));
-          data.dataTransfer.setData('text/plain', viewToPlainText(data.content));
+          data.dataTransfer.setData(
+            "text/html",
+            this._htmlDataProcessor.toData(data.content)
+          );
+          data.dataTransfer.setData(
+            "text/plain",
+            viewToPlainText(data.content)
+          );
         }
 
-        if (data.method == 'cut') {
+        if (data.method == "cut") {
           editor.model.deleteContent(modelDocument.selection);
         }
       },
-      { priority: 'low' }
+      { priority: "low" }
     );
   }
 }
